@@ -25,7 +25,9 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install pre-commit
-
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-get install gh -y
       - name: Run Pre-Commit Hooks
         run: |
           pre-commit run --all-files
