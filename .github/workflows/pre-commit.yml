@@ -1,0 +1,52 @@
+name: Pre-Commit Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
+
+jobs:
+  pre-commit-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Ensure all commit history is fetched
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Install Dependencies
+        run: |
+          pip install pre-commit
+
+      - name: Run Pre-Commit Hooks
+        run: |
+          pre-commit run --all-files
+      - name: Get PR commits
+        run: |
+          echo "Fetching PR commit messages..."
+          commits=$(gh pr view ${{ github.event.pull_request.number }} --json commits --jq '.commits[].commit.message')
+          echo "Commit messages:"
+          echo "$commits"
+          echo "$commits" > commits.txt
+      - name: Check for Asana IDs
+        id: check
+        run: |
+          echo "Checking commit messages for Asana IDs..."
+          if grep -Eq '\b[0-9]{10,}\b' commits.txt; then
+            echo "Asana IDs found in commits."
+          else
+            echo "No Asana IDs found in commits."
+            exit 1
+          fi
+      - name: Pass or Fail
+        if: failure()
+        run: |
+          echo "Ensure that all commit messages contain an Asana ID. Example: 1234567890"
